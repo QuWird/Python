@@ -1,0 +1,105 @@
+Импорт необходимых библиотек
+import sqlite3
+import hashlib
+import random
+import string
+
+
+
+Создание базы данных и таблицы
+
+def create_database():
+    conn = sqlite3.connect('passwords.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS passwords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            hashed_password TEXT NOT NULL
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+
+
+Функция генерации пароля
+
+def generate_password(length=12):
+    characters = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(random.choice(characters) for _ in range(length))
+    return password
+
+
+
+Хэширование пароля
+
+def hash_password(password):
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+Сохранение пароля в БД
+def save_password(username, password):
+    hashed = hash_password(password)
+    conn = sqlite3.connect('passwords.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('INSERT INTO passwords (username, hashed_password) VALUES (?, ?)',
+                  (username, hashed))
+    
+    conn.commit()
+    conn.close()
+Получение и дешифрование пароля
+def get_password(username):
+    conn = sqlite3.connect('passwords.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT hashed_password FROM passwords WHERE username = ?', (username,))
+    result = cursor.fetchone()
+    
+    if result:
+        hashed_password = result[0]
+        # Здесь мы не можем "расхешировать" пароль, так как хэширование необратимо
+        # Вместо этого мы можем только сравнить хэши при проверке
+        print(f"Хэшированный пароль для {username}: {hashed_password}")
+    else:
+        print("Пользователь не найден")
+    
+    conn.close()
+
+
+
+Основная функция программы
+
+def main():
+    create_database()
+    
+    while True:
+        print("\n1. Сгенерировать и сохранить пароль")
+        print("2. Получить пароль")
+        print("3. Выход")
+        
+        choice = input("Выберите действие: ")
+        
+        if choice == '1':
+            username = input("Введите имя пользователя: ")
+            password = generate_password()
+            print(f"Сгенерированный пароль: {password}")
+            save_password(username, password)
+            
+        elif choice == '2':
+            username = input("Введите имя пользователя: ")
+            get_password(username)
+            
+        elif choice == '3':
+            break
+            
+        else:
+            print("Неверный выбор")
+
+
+
+Запуск программы
+
+if __name__ == "__main__":
+    main()
